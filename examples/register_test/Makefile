@@ -19,17 +19,28 @@ CFLAGS += -I.
 LDFLAGS += -L../../lib
 LDLIBS += -lreconic -static
 
-# Executable and sources
+# Executables and sources
 EXECUTABLE = register_test
+EXECUTABLE_ARM = register_test_arm
 SOURCES = register_test.c
+SOURCES_ARM = register_test_arm.c
 OBJECTS = $(SOURCES:.c=.o)
+OBJECTS_ARM = $(SOURCES_ARM:.c=.o)
 
-# Default target
-all: $(EXECUTABLE)
+# Default target - build both versions
+all: $(EXECUTABLE) $(EXECUTABLE_ARM)
 
-# Build the executable
+# Build the standard executable
 $(EXECUTABLE): $(OBJECTS) ../../lib/libreconic.a
 	$(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $@
+
+# Build the ARM-optimized executable (standalone, no library dependency)
+$(EXECUTABLE_ARM): $(OBJECTS_ARM)
+	$(CC) $(OBJECTS_ARM) -o $@
+
+# ARM version doesn't need the library
+$(EXECUTABLE_ARM).o: $(SOURCES_ARM)
+	$(CC) $(CFLAGS) -c $(SOURCES_ARM) -o $@
 
 # Compile source files
 %.o: %.c
@@ -42,7 +53,7 @@ $(EXECUTABLE): $(OBJECTS) ../../lib/libreconic.a
 
 # Clean build artifacts
 clean:
-	rm -f $(OBJECTS) $(EXECUTABLE)
+	rm -f $(OBJECTS) $(OBJECTS_ARM) $(EXECUTABLE) $(EXECUTABLE_ARM)
 
 # Clean everything including library
 distclean: clean
@@ -62,16 +73,27 @@ uninstall:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  all        - Build the register test program (default)"
-	@echo "  clean      - Remove build artifacts"
-	@echo "  distclean  - Remove build artifacts and clean library"
-	@echo "  install    - Install to /usr/local/bin (requires sudo)"
-	@echo "  uninstall  - Remove from /usr/local/bin (requires sudo)"
-	@echo "  help       - Show this help message"
+	@echo "  all              - Build both register test programs (default)"
+	@echo "  register_test    - Build standard version (requires libreconic)"
+	@echo "  register_test_arm- Build ARM-optimized version (standalone)"
+	@echo "  clean            - Remove build artifacts"
+	@echo "  distclean        - Remove build artifacts and clean library"
+	@echo "  install          - Install to /usr/local/bin (requires sudo)"
+	@echo "  uninstall        - Remove from /usr/local/bin (requires sudo)"
+	@echo "  help             - Show this help message"
+	@echo ""
+	@echo "Available programs:"
+	@echo "  register_test     - Standard version for x86/general use"
+	@echo "  register_test_arm - ARM-optimized for NVIDIA Jetson/ARM platforms"
 	@echo ""
 	@echo "Usage examples:"
-	@echo "  make                    # Build the program"
-	@echo "  make clean             # Clean build files"
-	@echo "  sudo make install      # Install system-wide"
+	@echo "  make                      # Build both versions"
+	@echo "  make register_test_arm    # Build ARM-optimized version only"
+	@echo "  make clean               # Clean build files"
+	@echo "  sudo make install        # Install system-wide"
+	@echo ""
+	@echo "For ARM platforms (NVIDIA Jetson):"
+	@echo "  ./register_test_arm -p /sys/bus/pci/devices/0005:01:00.0/resource2 -t -V"
+	@echo "  ./test_registers_arm.sh -v"
 
 .PHONY: all clean distclean install uninstall help
